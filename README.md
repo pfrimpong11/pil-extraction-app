@@ -88,7 +88,9 @@ Replace `your_google_generative_ai_api_key` with the actual API key.
 
 ## Example
 
-![App Screenshot](app_screenshot.png)
+![App Screenshot](page1.png)
+![App Screenshot](page2.png)
+![App Screenshot](page3.png)
 
 
 ---
