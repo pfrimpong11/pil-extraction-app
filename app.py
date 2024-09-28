@@ -13,7 +13,7 @@ load_dotenv()
 API_KEY = os.getenv('API_KEY')
 genai.configure(api_key=API_KEY)
 
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
 # Function to generate PIL information using the image and description
 def generate_PIL_information(img, description):
