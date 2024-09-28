@@ -46,9 +46,28 @@ def generate_PIL_information(img, description):
     
     # Gemini model
     model = genai.GenerativeModel('gemini-1.5-pro')
-    response = model.generate_content([prompt, img, description])
-    
-    return response.text
+    try:
+        response = model.generate_content([prompt, img, description])
+
+        # Access response candidates 
+        if hasattr(response, "candidates") and len(response.candidates) > 0:
+            candidate = response.candidates[0]
+
+            if hasattr(candidate, "content") and hasattr(candidate.content, "parts"):
+                parts = candidate.content.parts
+                if len(parts) > 0 and hasattr(parts[0], "text"):
+                    # Joining text from all parts
+                    extracted_text = " ".join(part.text for part in parts)
+                    return extracted_text
+                else:
+                    return ""
+            else:
+                return ""
+        else:
+            return response.text
+    except Exception as e:
+        st.error(f"An error occurred: Please try again!")
+        return ""
 
 
 
@@ -83,9 +102,28 @@ def generate_PIL_information_pdf(pdf_text):
     
     # Gemini model
     model = genai.GenerativeModel('gemini-1.5-pro')
-    response = model.generate_content([prompt, pdf_text])
-    
-    return response.text
+    try:
+        response = model.generate_content([prompt, pdf_text])
+
+        # Access response candidates 
+        if hasattr(response, "candidates") and len(response.candidates) > 0:
+            candidate = response.candidates[0]
+
+            if hasattr(candidate, "content") and hasattr(candidate.content, "parts"):
+                parts = candidate.content.parts
+                if len(parts) > 0 and hasattr(parts[0], "text"):
+                    # Joining text from all parts
+                    extracted_text = " ".join(part.text for part in parts)
+                    return extracted_text
+                else:
+                    return ""
+            else:
+                return ""
+        else:
+            return response.text
+    except Exception as e:
+        st.error(f"An error occurred: Please try again!")
+        return ""
 
 
 
@@ -174,7 +212,12 @@ def display_response(response):
 
 # web app
 def main():
-    st.title("Patient Information Leaflet")
+    st.title("PIL Extractor App")
+    st.subheader("Welcome to the PIL Extractor App!")
+    st.write("""
+        With this app, you can easily extract important drug information from Patient Information Leaflets (PILs). 
+        Simply upload an image or PDF of a PIL, and and let the app handle the rest!
+        """)
 
     # File uploader for the image
     upload_file = st.file_uploader('Upload PIL Image', type=['png', 'jpg', 'jpeg', 'pdf'])
