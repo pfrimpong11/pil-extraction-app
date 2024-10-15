@@ -5,3 +5,5 @@ PyPDF2
 pytesseract
 google-generativeai
 python-dotenv
+flask
+flask-cors
