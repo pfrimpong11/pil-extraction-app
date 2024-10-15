@@ -14,7 +14,8 @@ load_dotenv()
 API_KEY = os.getenv('API_KEY')
 genai.configure(api_key=API_KEY)
 
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -152,14 +153,14 @@ def upload_file():
     
     if file_type == "application/pdf":
         pdf_text = extract_text_from_pdf(file)
-        print(pdf_text)
+        # print(pdf_text)
         response = generate_PIL_information_pdf(pdf_text)
 
         # Clean up the response
         response = re.sub(r'```json|```', '', response).strip()
         response = response.replace('\n', '')
 
-        print(response)
+        # print(response)
         return jsonify(response)
 
     else:
@@ -167,14 +168,14 @@ def upload_file():
             img = PIL.Image.open(file)
             extracted_text = pytesseract.image_to_string(img)
             if extracted_text.strip():
-                print(extracted_text)
+                # print(extracted_text)
                 response = generate_PIL_information(img, extracted_text)
 
                 # Clean up the response
                 response = re.sub(r'```json|```', '', response).strip()
                 response = response.replace('\n', '')
 
-                print(response)
+                # print(response)
                 return jsonify(response)
             else:
                 return jsonify({"error": "Could not extract text from the image"}), 400
