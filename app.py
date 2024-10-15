@@ -1,19 +1,23 @@
-import google.generativeai as genai
-import PIL.Image
-from dotenv import load_dotenv
-import os
-import streamlit as st
+from flask import Flask, request, jsonify
 import pytesseract
+import PIL.Image
+import PyPDF2
+import os
 import re
 import json
-import PyPDF2
+from dotenv import load_dotenv
+import google.generativeai as genai
+from flask_cors import CORS
 
 # Load environment variables
 load_dotenv()
 API_KEY = os.getenv('API_KEY')
 genai.configure(api_key=API_KEY)
 
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Function to generate PIL information using the image and description
 def generate_PIL_information(img, description):
@@ -30,6 +34,8 @@ def generate_PIL_information(img, description):
     Interactions: Possible interactions with other drugs or substances.
     Storage: How to store the medication properly.
     Expiration date: The date by which the medication should be used.
+
+    FIll empty keys and arrays with N/A
 
     Respond with a JSON string structured as follows:
     {{
@@ -66,7 +72,7 @@ def generate_PIL_information(img, description):
         else:
             return response.text
     except Exception as e:
-        st.error(f"An error occurred: Please try again!")
+        print(f"An error occurred: Please try again!", e)
         return ""
 
 
@@ -86,6 +92,8 @@ def generate_PIL_information_pdf(pdf_text):
     Interactions: Possible interactions with other drugs or substances.
     Storage: How to store the medication properly.
     Expiration date: The date by which the medication should be used.
+
+    FIll empty keys and arrays with N/A
 
     Respond with a JSON string structured as follows:
     {{
@@ -122,131 +130,56 @@ def generate_PIL_information_pdf(pdf_text):
         else:
             return response.text
     except Exception as e:
-        st.error(f"An error occurred: Please try again!")
+        print(f"An error occurred: Please try again!", e)
         return ""
 
 
 
-
-def display_response(response):
-    st.subheader("PIL Information")
-
-    # Clean up the response
-    response = re.sub(r'```json|```', '', response).strip()
-
-    try:
-        drug_information = json.loads(response)
-
-        # Drug name
-        st.subheader("Drug Name:")
-        drugName = drug_information.get("DrugName","")
-        if drugName:
-            st.write(drugName)
-        else:
-            st.write("No Drug name section found on the uploaded PIL image.")
-
-        # Intended Use
-        st.subheader("Intended Use:")
-        intendedUse = drug_information.get("IntendedUse", [])
-        if intendedUse:
-            for use in intendedUse:
-                st.write("- ", use)
-        else:
-            st.write("No Intended use section found on the uploaded PIL image.")
-
-        # Dosage
-        st.subheader("Dosage:")
-        dosage = drug_information.get("Dosage","")
-        if dosage:
-            st.write(dosage)
-        else:
-            st.write("No Dosage section found on the uploaded PIL image.")
-
-        # Side effects
-        st.subheader("Side Effects:")
-        sideEffect = drug_information.get("SideEffects", [])
-        if sideEffect:
-            for effect in sideEffect:
-                st.write("- ", effect)
-        else:
-            st.write("No side effects section found on the uploaded PIL image")
-
-        # Precautions
-        st.subheader("Precautions:")
-        precautions = drug_information.get("Precautions", [])
-        if precautions:
-            for precaution in precautions:
-                st.write("- ", precaution)
-        else:
-            st.write("No Precautions section found on the uploaded PIL image")
-
-        # Interactions
-        st.subheader("Interactions:")
-        interactions = drug_information.get("Interactions", [])
-        if interactions:
-            for interaction in interactions:
-                st.write("- ", interaction)
-        else:
-            st.write("No Interactions section found on the uploaded PIL image")
-
-        # Storage
-        st.subheader("Storage:")
-        storage = drug_information.get("Storage","")
-        if storage:
-            st.write(storage)
-        else:
-            st.write("No Storage section found on the uploaded PIL image.")
-
-        # Expiration date
-        st.subheader("Expiration Date:")
-        expirationDate = drug_information.get("ExpirationDate","")
-        if expirationDate:
-            st.write(expirationDate)
-        else:
-            st.write("No expiration date section found on the uploaded PIL image.")
-
-    except json.JSONDecodeError as e:
-        st.error("An error occurred. Please try again!")
+# Function to extract text from PDF
+def extract_text_from_pdf(file):
+    pdf_reader = PyPDF2.PdfReader(file)
+    return "".join([page.extract_text() for page in pdf_reader.pages])
 
 
-
-# web app
-def main():
-    st.title("PIL Extractor App")
-    st.subheader("Welcome to the PIL Extractor App!")
-    st.write("""
-        With this app, you can easily extract important drug information from Patient Information Leaflets (PILs). 
-        Simply upload an image or PDF of a PIL, and and let the app handle the rest!
-        """)
-
-    # File uploader for the image
-    upload_file = st.file_uploader('Upload PIL Image', type=['png', 'jpg', 'jpeg', 'pdf'])
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    # Get the uploaded file
+    file = request.files.get('file')
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
     
-    if upload_file is not None:
-        
-        if upload_file.type =="application/pdf":
-            pdf_reader = PyPDF2.PdfReader(upload_file)
-            pdf_text = "".join([page.extract_text() for page in pdf_reader.pages])
+    file_type = file.content_type
+    
+    if file_type == "application/pdf":
+        pdf_text = extract_text_from_pdf(file)
+        print(pdf_text)
+        response = generate_PIL_information_pdf(pdf_text)
 
-            response = generate_PIL_information_pdf(pdf_text)
-            # display response/ results
-            display_response(response)
+        # Clean up the response
+        response = re.sub(r'```json|```', '', response).strip()
+        response = response.replace('\n', '')
 
-        else:
-            img = PIL.Image.open(upload_file)
-            
-            # Display the uploaded image
-            st.image(img, caption="Uploaded PIL Image", use_column_width=True)
+        print(response)
+        return jsonify(response)
 
-            # Extract text from the image using pytesseract
+    else:
+        try:
+            img = PIL.Image.open(file)
             extracted_text = pytesseract.image_to_string(img)
-
-            if extracted_text.strip():  # Ensure that some text has been extracted
+            if extracted_text.strip():
+                print(extracted_text)
                 response = generate_PIL_information(img, extracted_text)
-                # Display results/response
-                display_response(response)
+
+                # Clean up the response
+                response = re.sub(r'```json|```', '', response).strip()
+                response = response.replace('\n', '')
+
+                print(response)
+                return jsonify(response)
             else:
-                st.write("Could not extract text from the image.")
+                return jsonify({"error": "Could not extract text from the image"}), 400
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    main()
+    app.run(host='0.0.0.0', port=5000)
