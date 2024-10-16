@@ -1,0 +1,15 @@
+version: '3.8'  # Specify the version of Docker Compose
+
+services:
+  pil-extractor-api:
+    build:
+      context: .  # Context is the current directory
+      dockerfile: Dockerfile  # Use the specified Dockerfile
+    env_file:
+      - .env  # Load environment variables from the .env file
+    ports:
+      - "5000:5000"  # Map port 5000 of the container to port 5000 on the host
+    volumes:
+      - .:/app  # Mount the current directory to /app in the container (optional for development)
+    restart: unless-stopped  # Restart policy for the container
+

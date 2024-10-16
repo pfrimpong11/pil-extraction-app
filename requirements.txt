@@ -2,7 +2,6 @@ numpy
 Pillow
 PyPDF2
 pytesseract
-tesseract-ocr
 google-generativeai
 python-dotenv
 flask
